@@ -1,8 +1,10 @@
 # fluent-plugin-firelens-tag-filter
 
-[Fluentd](https://fluentd.org/) output plugin to do something.
+[Fluentd](https://fluentd.org/) output plugin to rewrite tag of message sent by [AWS Firelens](https://docs.aws.amazon.com/AmazonECS/latest/userguide/using_firelens.html).
 
-TODO: write description for you plugin.
+A tag of messages from AWS firelens has format like `[containerName]-firelens-[taskID]`, but a tag of fluentd is a string separated by dots (e.g. myapp.access) usually.
+
+fluent-plugin-firelens-tag-filter rewrites message tags from `[containerName]-firelens-[taskID]` to `[tag_prefix].[containerName].(stdout|stderr).[taskID]`.
 
 ## Installation
 
@@ -28,13 +30,22 @@ $ bundle
 
 ## Configuration
 
-You can generate configuration template:
+```conf
+<match *-firelens-*>
+  @type firelens_tag_filter
+  tag_prefix ecs       # default firelens
+</match>
 
-```
-$ fluent-plugin-config-format output firelens-tag-filter
-```
+<filter ecs.nginx.stdout.**>
+  @type parser
+  key_name log
+  format ltsv
+</filter>
 
-You can copy and paste generated documents here.
+<match ecs.app.**>
+  # ...
+</match>
+```
 
 ## Copyright
 
