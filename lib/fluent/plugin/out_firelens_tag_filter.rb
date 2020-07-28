@@ -24,6 +24,15 @@ module Fluent
       desc 'rewrote tag prefix'
       config_param :tag_prefix, :string, :default => 'firelens'
 
+      desc 'tag format'
+      config_param :tag, :string, :default => '${tag_prefix}.${container_name}.${source}.${task_id}'
+
+      def configure(conf)
+        super
+        @tag_format = @tag.gsub(/%/, '%%').gsub(/\$\{(.*?)\}/, '%{\1}')
+        log.debug("tag_format #{@tag_format}")
+      end
+
       # rewrite message tag
       # from: [containerName]-firelens-[taskID]
       # to:   [tag_prefix].[containerName].(stdout|stderr).[taskID]
@@ -34,10 +43,15 @@ module Fluent
           router.emit_stream(@tag_prefix + "." + tag, es)
           return
         end
+        v = {
+          tag_prefix: @tag_prefix,
+          container_name: matched[1],
+          task_id: matched[2],
+        }
         es.each do |time, record|
-          src = record['source'] || 'unknown'
+          v[:source] = record['source'] || 'unknown'
           router.emit(
-            [@tag_prefix, matched[1], src, matched[2]].join('.'),
+            sprintf(@tag_format, v),
             time,
             record,
           )
