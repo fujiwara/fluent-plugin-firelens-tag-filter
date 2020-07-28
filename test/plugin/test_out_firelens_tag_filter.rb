@@ -38,6 +38,22 @@ class FirelensTagFilterOutputTest < Test::Unit::TestCase
     assert_equal events[2], ['ecs.app.unknown.a27287f301b06d77', time, {"foo" => "boo"}]
   end
 
+  test "tag" do
+    d = create_driver "tag xxx.${source}.${task_id}.${container_name}"
+    time = event_time("2020-07-22 11:22:33Z")
+    d.run(default_tag: "app-firelens-a27287f301b06d77") do
+      d.feed(time, {"foo" => "bar", "source" => "stdout"})
+      d.feed(time, {"foo" => "baz", "source" => "stderr"})
+      d.feed(time, {"foo" => "boo"})
+    end
+
+    events = d.events
+    assert_equal 3, events.length
+    assert_equal events[0], ['xxx.stdout.a27287f301b06d77.app', time, {"foo" => "bar", "source" => "stdout"}]
+    assert_equal events[1], ['xxx.stderr.a27287f301b06d77.app', time, {"foo" => "baz", "source" => "stderr"}]
+    assert_equal events[2], ['xxx.unknown.a27287f301b06d77.app', time, {"foo" => "boo"}]
+  end
+
   test "unexpected" do
     d = create_driver ""
     time = event_time("2020-07-22 11:22:33Z")
